@@ -41,6 +41,11 @@
     </header>
 
     <section id="weather" class="card weather"><p class="muted">Loading weather…</p></section>
+    <details id="todos" class="card sec" data-key="todos" open hidden>
+      <summary class="section-title">To do <span class="count" id="todo-count"></span></summary>
+      <div id="todo-body"></div>
+      <p class="todo-foot muted"><span id="todo-synced"></span> · <a href="shortcuts://run-shortcut?name=Morning%20todos">Sync now</a> · <a href="x-apple-reminderkit://">Open Reminders</a></p>
+    </details>
     <details id="calendar" class="card sec" data-key="cal" open hidden>
       <summary class="section-title">Calendar <span class="count" id="cal-count"></span></summary>
       <div id="cal-body"></div>

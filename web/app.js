@@ -182,6 +182,73 @@ function renderCalendar(cal) {
     block('Today', todayKey, true) + block('Tomorrow', tmrKey, false);
 }
 
+// ---------- to do (open Apple Reminders, synced by the "Morning todos" Shortcut) ----------
+// Ticks are kept on this device only; they don't complete the reminder in Apple Reminders.
+const todoKey = t => (t.list || '') + '|' + t.title;
+let doneSet = new Set(store.get('mr-done', []));
+
+function renderTodos(todos) {
+  const el = $('#todos');
+  if (!todos) { el.hidden = true; return; }
+  el.hidden = false;
+  const items = todos.items || [];
+  // forget ticks for reminders that are gone (completed in Reminders)
+  const live = new Set(items.map(todoKey));
+  doneSet = new Set([...doneSet].filter(k => live.has(k)));
+  store.set('mr-done', [...doneSet]);
+
+  const now = new Date(), today = localDateKey(now);
+  const in7 = new Date(now); in7.setDate(in7.getDate() + 7);
+  const week = localDateKey(in7);
+  const dayOf = t => t.allDay ? t.due : localDateKey(new Date(t.due));
+  const groups = { overdue: [], today: [], soon: [], later: [] }, undated = new Map();
+  for (const t of items) {
+    if (!t.due) { if (!undated.has(t.list)) undated.set(t.list, []); undated.get(t.list).push(t); continue; }
+    const d = dayOf(t);
+    (d < today ? groups.overdue : d === today ? groups.today : d <= week ? groups.soon : groups.later).push(t);
+  }
+  const byDue = (a, b) => (dayOf(a) + (a.allDay ? '' : a.due)).localeCompare(dayOf(b) + (b.allDay ? '' : b.due));
+  Object.values(groups).forEach(g => g.sort(byDue));
+
+  const dueLabel = t => {
+    const d = dayOf(t);
+    const time = t.allDay ? '' : ' ' + fmtTime(new Date(t.due));
+    if (d < today) return `<span class="due-over">${new Date(d + 'T12:00').toLocaleDateString([], { day: 'numeric', month: 'short' })}${time}</span>`;
+    if (d === today) return `<span class="due-today">Today${time}</span>`;
+    return new Date(d + 'T12:00').toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' }) + time;
+  };
+  const row = (t, showList) => {
+    const k = todoKey(t), done = doneSet.has(k);
+    const meta = [t.due ? dueLabel(t) : '', showList && t.list ? escHtml(t.list) : '', t.notes ? escHtml(t.notes) : '']
+      .filter(Boolean).join(' · ');
+    return `<li><button class="todo-item${done ? ' done' : ''}" data-key="${escHtml(k)}">` +
+      `<span class="todo-box">${done ? '✓' : ''}</span><span><span class="todo-title">${escHtml(t.title)}</span>` +
+      (meta ? `<span class="todo-meta">${meta}</span>` : '') + `</span></button></li>`;
+  };
+  const section = (label, list, cls = '', showList = true) => list.length
+    ? `<p class="todo-group ${cls}">${label}</p><ul class="todo-list">${list.map(t => row(t, showList)).join('')}</ul>` : '';
+
+  let html = section('Overdue', groups.overdue, 'overdue') + section('Today', groups.today) +
+    section('Next 7 days', groups.soon) + section('Later', groups.later);
+  for (const [list, ts] of undated) html += section(list || 'No date', ts, '', false);
+  if (!items.length) html = `<p class="muted" style="margin:0">${todos.ok ? 'Nothing open. Nice.' : 'Could not read your reminders on the last update.'}</p>`;
+  $('#todo-body').innerHTML = html;
+
+  const urgent = groups.overdue.length + groups.today.length;
+  $('#todo-count').textContent = items.length ? `· ${urgent ? urgent + ' due' : items.length}` : '';
+  $('#todo-synced').textContent = todos.synced ? `From Reminders, synced ${ago(todos.synced)}` : 'From Reminders';
+}
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('.todo-item');
+  if (!b) return;
+  const k = b.dataset.key;
+  doneSet.has(k) ? doneSet.delete(k) : doneSet.add(k);
+  store.set('mr-done', [...doneSet]);
+  b.classList.toggle('done', doneSet.has(k));
+  b.querySelector('.todo-box').textContent = doneSet.has(k) ? '✓' : '';
+});
+
 // ---------- collapsible sections (remembered per device) ----------
 function initSections() {
   const folded = new Set(store.get('mr-folded', []));
@@ -254,6 +321,7 @@ function renderPapers() {
 
 function renderAll() {
   renderHeader();
+  renderTodos(DATA.todos);
   renderCalendar(DATA.calendar);
   renderNews();
   renderPapers();

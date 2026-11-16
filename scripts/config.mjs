@@ -73,6 +73,9 @@ export const PAPERS = {
 };
 
 // Used for calendar events without a time zone ("floating" times).
+// Reminders lists to leave out of the To do card, e.g. ['Bøker'].
+export const TODOS = { excludeLists: [] };
+
 // placePattern: calendar events titled like this set the weather location while they last.
 export const CALENDAR = {
   defaultTz: 'Asia/Shanghai', pastHours: 12, futureHours: 60,

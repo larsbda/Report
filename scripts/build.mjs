@@ -6,7 +6,8 @@ import { mkdir, cp, readFile, writeFile, rm } from 'node:fs/promises';
 import { webcrypto as crypto } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { FEEDS, TOPICS, NEGATIVE, LIMITS, PAPERS, CALENDAR } from './config.mjs';
+import { FEEDS, TOPICS, NEGATIVE, LIMITS, PAPERS, CALENDAR, TODOS } from './config.mjs';
+import { fetchTodos } from './todos.mjs';
 import { eventsInWindow } from './ics.mjs';
 import { inferPlaces } from './places.mjs';
 import { checkArticleCopies } from './article-copies.mjs';
@@ -216,6 +217,20 @@ async function buildCalendar(now) {
   return { ok: ok > 0, events: agenda, places };
 }
 
+// ---------- to do (Apple Reminders via an iPhone Shortcut -> secret gist) ----------
+async function buildTodos() {
+  const id = process.env.TODOS_GIST_ID?.trim();
+  if (!id) return null;
+  try {
+    const t = await fetchTodos(id, { excludeLists: TODOS.excludeLists, token: process.env.GITHUB_TOKEN });
+    console.log(`todos: ${t.items.length} open reminders`);   // count only: logs are public
+    return { ok: true, ...t };
+  } catch (e) {
+    console.warn(`todos failed (${e.message})`);
+    return { ok: false, synced: null, items: [] };
+  }
+}
+
 // ---------- crypto ----------
 const b64 = u8 => Buffer.from(u8).toString('base64');
 async function encrypt(obj, pass) {
@@ -252,15 +267,17 @@ async function previousReport() {
 }
 
 const now = Date.now();
-const [news, papersNow, calendar, prev] = await Promise.all([buildNews(now), buildPapers(), buildCalendar(now), previousReport()]);
+const [news, papersNow, calendar, todosNow, prev] = await Promise.all([buildNews(now), buildPapers(), buildCalendar(now), buildTodos(), previousReport()]);
 let papers = papersNow;
+let todos = todosNow;
+if (todos && !todos.ok && prev?.todos?.ok) { todos = { ...prev.todos, stale: true }; console.log('todos: reused previous list'); }
 if (!papers) { papers = prev?.papers || []; console.log(`papers: reused ${papers.length} from previous report`); }
 for (const s of news.sources) {
   const old = prev?.sources?.find(p => p.id === s.id);
   if (!s.ok && old?.ok) { s.items = old.items; s.ok = true; s.stale = true; console.log(`${s.id}: reused previous items`); }
 }
 await checkArticleCopies(news, { now });
-const data = { generated: new Date(now).toISOString(), ...news, papers, calendar };
+const data = { generated: new Date(now).toISOString(), ...news, papers, calendar, todos };
 
 await rm(DIST, { recursive: true, force: true });
 await mkdir(DIST, { recursive: true });

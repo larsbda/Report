@@ -37,6 +37,8 @@ jobs:
         env:
           REPORT_PASSPHRASE: ${{ secrets.REPORT_PASSPHRASE }}
           CALENDAR_ICS_URL: ${{ secrets.CALENDAR_ICS_URL }}
+          TODOS_GIST_ID: ${{ secrets.TODOS_GIST_ID }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPORT_URL: ${{ steps.pages.outputs.base_url }}
       - uses: actions/upload-pages-artifact@v3
         with:
