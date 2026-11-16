@@ -64,3 +64,6 @@ python3 -m http.server -d dist 8000                               # open http://
 - GitHub pauses scheduled workflows on public repos after 60 days without commits. If the report stops
   updating, push any commit or press "Run workflow".
 - If a feed or arXiv fails during a run, the previous run's items for that section are kept.
+- Article links open the publisher directly. ByeByePaywall offers links to other services but does not
+  return article text or confirm completeness, so it cannot satisfy a requirement to open an alternate
+  copy only after verifying the full article. Do not route articles there automatically without that verification.

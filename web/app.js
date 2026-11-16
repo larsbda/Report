@@ -201,13 +201,10 @@ const TOPIC_LABEL = { economy: 'Economy', finance: 'Finance', ai: 'AI', politics
 
 function storyHtml(it, { showImage = true } = {}) {
   const src = DATA.sources.find(s => s.id === it.source);
-  const link = safeUrl(it.link);
-  const href = it.source === 'ft' && link !== '#'
-    ? `https://www.removepaywall.com/search?url=${encodeURIComponent(link)}` : link;
   const chips = (it.topics || []).map(t => `<span class="chip">${TOPIC_LABEL[t] || t}</span>`).join('');
   const img = showImage && it.image ? `<img src="${escHtml(safeUrl(it.image))}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '';
   return `<li class="story${readSet.has(it.link) ? ' read' : ''}">
-    <a href="${escHtml(href)}" target="_blank" rel="noopener noreferrer" data-link="${escHtml(it.link)}">
+    <a href="${escHtml(safeUrl(it.link))}" target="_blank" rel="noopener noreferrer" data-link="${escHtml(it.link)}">
       <div class="story-body">
         <div class="meta"><span class="src src-${it.source}">${escHtml(src?.short || it.source)}</span><span>${ago(it.published)}</span>${chips}</div>
         <h3>${escHtml(it.title)}</h3>
