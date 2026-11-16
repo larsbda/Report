@@ -64,9 +64,9 @@ async function get(url, fetcher, timeout) {
   return r;
 }
 
-export async function findArticleCopy(story, { fetcher = fetch, now = Date.now() } = {}) {
+export async function findArticleCopy(story, { fetcher = fetch, now = Date.now(), onCandidate = () => {} } = {}) {
   if (story.source !== 'ft' || !FT_ARTICLE.test(story.link)) return null;
-  const archived = await findArchiveIsCopy(story, fetcher, now);
+  const archived = await findArchiveIsCopy(story, fetcher, now, onCandidate);
   if (archived) return archived;
   try {
     const lookup = await get(`https://archive.org/wayback/available?url=${encodeURIComponent(story.link)}`, fetcher, 8000);
@@ -74,6 +74,7 @@ export async function findArticleCopy(story, { fetcher = fetch, now = Date.now()
     if (!snapshot?.available || String(snapshot.status) !== '200') return null;
     const url = snapshotFor(snapshot.url?.replace(/^http:/, 'https:'), story.link);
     if (!url) return null;
+    onCandidate({ url, originalLink: story.link, provider: 'wayback' });
     const response = await get(url, fetcher, 10000);
     if (!snapshotFor(response.url, story.link)) return null;
     if (!/text\/html/i.test(response.headers.get('content-type') || '')) return null;
@@ -97,11 +98,16 @@ function archiveIsTarget(url, original) {
   } catch { return false; }
 }
 
-async function findArchiveIsCopy(story, fetcher, now) {
+async function findArchiveIsCopy(story, fetcher, now, onCandidate) {
+  const supplied = ARCHIVE_CANDIDATES[story.link];
+  if (supplied && archiveIsTarget(supplied, story.link)) {
+    onCandidate({ url: supplied, originalLink: story.link, provider: 'archiveis' });
+  }
   try {
-    const candidate = ARCHIVE_CANDIDATES[story.link] || `https://archive.ph/newest/${story.link}`;
+    const candidate = supplied || `https://archive.ph/newest/${story.link}`;
     const response = await get(candidate, fetcher, 10000);
     if (!archiveIsTarget(response.url, story.link)) return null;
+    onCandidate({ url: response.url, originalLink: story.link, provider: 'archiveis' });
     if (!/text\/html/i.test(response.headers.get('content-type') || '')) return null;
     if (!isFullArticle(await response.text(), story)) return null;
     return { url: response.url, originalLink: story.link, checkedAt: new Date(now).toISOString(), provider: 'archiveis' };
@@ -112,6 +118,7 @@ export async function checkArticleCopies(news, options) {
   const byLink = new Map();
   for (const story of [...news.top, ...news.sources.flatMap(s => s.items)]) {
     delete story.articleCopy; // Never carry a previous check into a new report.
+    delete story.archiveLink;
     if (story.source !== 'ft') continue;
     if (!byLink.has(story.link)) byLink.set(story.link, []);
     byLink.get(story.link).push(story);
@@ -121,7 +128,10 @@ export async function checkArticleCopies(news, options) {
   await Promise.all(Array.from({ length: 2 }, async () => {
     while (queue.length) {
       const stories = queue.shift();
-      const copy = await findArticleCopy(stories[0], options);
+      const copy = await findArticleCopy(stories[0], { ...options, onCandidate: candidate => {
+        // Prefer the supplied/archive.ph candidate if Wayback also has a copy.
+        for (const story of stories) story.archiveLink ||= candidate;
+      } });
       if (copy) { for (const story of stories) story.articleCopy = copy; checked++; }
     }
   }));

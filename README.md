@@ -74,3 +74,6 @@ python3 -m http.server -d dist 8000                               # open http://
   ByeByePaywall itself only offers links to other services and cannot verify article content.
   Archive.ph is checked first, then Wayback. Reader-supplied links in `scripts/archive-candidates.mjs`
   are candidates for the same verification, never automatic approvals.
+  When a supplied or discovered snapshot cannot be verified, a separate **Archive ↗** link still opens
+  it directly (a CAPTCHA may appear), alongside **FT original**. It gets no verification tick and the
+  story headline keeps opening FT. Checked copies open from the headline and also keep both links.

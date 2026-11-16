@@ -268,16 +268,25 @@ const TOPIC_LABEL = { economy: 'Economy', finance: 'Finance', ai: 'AI', politics
 
 function storyHtml(it, { showImage = true } = {}) {
   const src = DATA.sources.find(s => s.id === it.source);
-  const wayback = it.articleCopy?.provider === 'wayback'
-    && /^https:\/\/web\.archive\.org\/web\/\d{14}id_\/https:\/\/(?:www\.)?ft\.com\/content\/[a-z0-9-]+$/i.test(it.articleCopy.url)
-    && it.articleCopy.url.endsWith('/' + it.link);
-  const archiveIs = it.articleCopy?.provider === 'archiveis' && it.articleCopy.originalLink === it.link
-    && /^https:\/\/archive\.(?:ph|is|today|li|vn|md|fo)\/(?:[a-z0-9]{5,12}|(?:\d{14}|\d{4}\.\d{2}\.\d{2}-\d{6})\/https:\/\/(?:www\.)?ft\.com\/content\/[a-z0-9-]+)$/i.test(it.articleCopy.url)
-    && (/^https:\/\/archive\.[a-z]+\/[a-z0-9]{5,12}$/i.test(it.articleCopy.url) || it.articleCopy.url.endsWith('/' + it.link));
-  const copy = it.source === 'ft' && (wayback || archiveIs)
+  const validArchive = candidate => {
+    if (it.source !== 'ft' || !candidate) return false;
+    if (candidate.provider === 'wayback') return /^https:\/\/web\.archive\.org\/web\/\d{14}id_\/https:\/\/(?:www\.)?ft\.com\/content\/[a-z0-9-]+$/i.test(candidate.url)
+      && candidate.url.endsWith('/' + it.link);
+    return candidate.provider === 'archiveis' && candidate.originalLink === it.link
+      && /^https:\/\/archive\.(?:ph|is|today|li|vn|md|fo)\/(?:[a-z0-9]{5,12}|(?:\d{14}|\d{4}\.\d{2}\.\d{2}-\d{6})\/https:\/\/(?:www\.)?ft\.com\/content\/[a-z0-9-]+)$/i.test(candidate.url)
+      && (/^https:\/\/archive\.[a-z]+\/[a-z0-9]{5,12}$/i.test(candidate.url) || candidate.url.endsWith('/' + it.link));
+  };
+  const copy = validArchive(it.articleCopy)
     && Date.now() - Date.parse(it.articleCopy.checkedAt) >= 0
     && Date.now() - Date.parse(it.articleCopy.checkedAt) < 6 * 3600e3 ? it.articleCopy : null;
   const tick = copy ? '<span class="copy-tick" role="img" aria-label="Full archive copy checked; opens outside FT" title="Full archive copy checked; opens outside FT">✓</span>' : '';
+  const archive = copy || (validArchive(it.archiveLink) ? it.archiveLink : null)
+    || (validArchive(it.articleCopy) ? it.articleCopy : null);
+  const archiveLabel = copy ? 'Open checked archive copy' : 'Open archive copy; full article not verified, CAPTCHA may be required';
+  const links = archive ? `<div class="story-links">
+    <a href="${escHtml(archive.url)}" target="_blank" rel="noopener noreferrer" data-link="${escHtml(it.link)}" title="${archiveLabel}" aria-label="${archiveLabel}">Archive ↗</a>
+    <a href="${escHtml(safeUrl(it.link))}" target="_blank" rel="noopener noreferrer" data-link="${escHtml(it.link)}">FT original</a>
+  </div>` : '';
   const chips = (it.topics || []).map(t => `<span class="chip">${TOPIC_LABEL[t] || t}</span>`).join('');
   const img = showImage && it.image ? `<img src="${escHtml(safeUrl(it.image))}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '';
   return `<li class="story${readSet.has(it.link) ? ' read' : ''}">
@@ -287,7 +296,7 @@ function storyHtml(it, { showImage = true } = {}) {
         <h3>${escHtml(it.title)}</h3>
         ${it.desc ? `<p>${escHtml(it.desc)}</p>` : ''}
       </div>${img}
-    </a></li>`;
+    </a>${links}</li>`;
 }
 
 function renderNews() {

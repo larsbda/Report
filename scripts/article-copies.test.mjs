@@ -141,3 +141,42 @@ test('archive.ph copies show the tick and open the checked permalink', () => {
     assert.ok(html.includes(`href="${story.link}"`));
   }
 });
+
+test('a blocked supplied copy remains a direct archive link without a tick', async () => {
+  const link = 'https://www.ft.com/content/0f30a230-4d66-481b-a4fd-3a4ed0c45855';
+  const a = { ...story, link }, b = { ...story, link };
+  const news = { top: [a], sources: [{ items: [b] }] };
+  await checkArticleCopies(news, { now, fetcher: async () => { throw new Error('CAPTCHA or timeout'); } });
+  assert.equal(a.articleCopy, undefined);
+  assert.equal(a.archiveLink.url, ARCHIVE_CANDIDATES[link]);
+  assert.deepEqual(a.archiveLink, b.archiveLink);
+  const html = ctx.storyHtml(a);
+  assert.ok(!html.includes('class="copy-tick"'));
+  assert.ok(html.includes(`href="${ARCHIVE_CANDIDATES[link]}"`));
+  assert.ok(html.includes('>Archive ↗</a>'));
+  assert.ok(html.includes('>FT original</a>'));
+  assert.ok(html.includes('full article not verified'));
+  assert.ok(html.indexOf(`href="${link}"`) < html.indexOf('story-links'));
+  assert.ok(html.includes('</a><div class="story-links">')); // separate links, never nested
+});
+
+test('an available Wayback snapshot stays discoverable when body verification fails', async () => {
+  const a = { ...story };
+  await checkArticleCopies({ top: [a], sources: [] }, { now, fetcher: async url => {
+    if (url.startsWith('https://archive.ph/')) throw new Error('blocked');
+    const response = await fetcher(url);
+    return response.text ? { ...response, text: async () => '<h1>Subscribe to read</h1>' } : response;
+  } });
+  assert.equal(a.articleCopy, undefined);
+  assert.equal(a.archiveLink.url, archiveUrl);
+  assert.ok(ctx.storyHtml(a).includes('>Archive ↗</a>'));
+});
+
+test('unknown copies and invalid candidate destinations have no archive action', () => {
+  for (const archiveLink of [undefined, { provider: 'archiveis', originalLink: story.link, url: 'https://evil.test/Ab123' },
+    { provider: 'archiveis', originalLink: story.link, url: 'https://archive.ph/newest/' + story.link }]) {
+    const html = ctx.storyHtml({ ...story, archiveLink });
+    assert.ok(!html.includes('story-links'));
+    assert.ok(!html.includes('copy-tick'));
+  }
+});
