@@ -64,11 +64,8 @@ python3 -m http.server -d dist 8000                               # open http://
 - GitHub pauses scheduled workflows on public repos after 60 days without commits. If the report stops
   updating, push any commit or press "Run workflow".
 - If a feed or arXiv fails during a run, the previous run's items for that section are kept.
-- Story links open the publisher (WSJ, DN, NRK). DN opens logged in through your DN subscription.
-- WSJ replaced FT, because FT.com is restricted on NTNU's academic Factiva account while WSJ is a Dow Jones
-  title like Factiva itself. WSJ stories get **Read in Factiva ↗**. Factiva has no link to a specific article
-  from outside, so the button copies a keyword search ("Campaign and Bring and Jensen and Huang") and opens
-  Factiva; paste it into the search. If Factiva's search page takes the query in its address, set
-  `FACTIVA_SEARCH` in `web/app.js` and the button opens the results directly.
-- The build never fetches article text from Factiva or anywhere else: that would break the licence terms
-  and publish licensed content.
+- WSJ headlines open `https://archive.ph/newest/` followed by the article URL, without feed tracking
+  parameters. Each story also has **Archive ↗** and **WSJ original** links. Archive availability is not
+  verified: archive.ph may show a CAPTCHA or have no saved copy, so there is no verification tick.
+- DN and NRK links open the publisher directly. DN uses your existing browser subscription session.
+- The build fetches public headlines and summaries, never full article text.

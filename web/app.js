@@ -269,14 +269,25 @@ const TOPIC_LABEL = { economy: 'Economy', finance: 'Finance', ai: 'AI', politics
 
 function storyHtml(it, { showImage = true } = {}) {
   const src = DATA.sources.find(s => s.id === it.source);
-  // WSJ stories: read the full article through NTNU's Factiva licence (WSJ is Dow Jones, like Factiva).
-  const links = it.source === 'wsj' ? `<div class="story-links">
-    <button class="fx-btn" data-headline="${escHtml(it.title)}" data-link="${escHtml(it.link)}">Read in Factiva ↗</button>
+  let archive = null;
+  if (it.source === 'wsj') {
+    try {
+      const url = new URL(it.link);
+      if (/^https?:$/.test(url.protocol) && /^(?:www\.)?wsj\.com$/i.test(url.hostname)
+        && !url.username && !url.password && !url.port && url.pathname !== '/') {
+        // Archive lookups use the article URL, without feed tracking parameters.
+        archive = `https://archive.ph/newest/https://${url.host}${url.pathname}`;
+      }
+    } catch { /* Invalid article URL: keep the safe publisher fallback. */ }
+  }
+  const links = archive ? `<div class="story-links">
+    <a href="${escHtml(archive)}" target="_blank" rel="noopener noreferrer" data-link="${escHtml(it.link)}" title="Look for an archived copy; availability is not verified">Archive ↗</a>
+    <a href="${escHtml(safeUrl(it.link))}" target="_blank" rel="noopener noreferrer" data-link="${escHtml(it.link)}">WSJ original</a>
   </div>` : '';
   const chips = (it.topics || []).map(t => `<span class="chip">${TOPIC_LABEL[t] || t}</span>`).join('');
   const img = showImage && it.image ? `<img src="${escHtml(safeUrl(it.image))}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '';
   return `<li class="story${readSet.has(it.link) ? ' read' : ''}">
-    <a href="${escHtml(safeUrl(it.link))}" target="_blank" rel="noopener noreferrer" data-link="${escHtml(it.link)}">
+    <a href="${escHtml(archive || safeUrl(it.link))}" target="_blank" rel="noopener noreferrer" data-link="${escHtml(it.link)}">
       <div class="story-body">
         <div class="meta"><span class="src src-${it.source}">${escHtml(src?.short || it.source)}</span><span>${ago(it.published)}</span>${chips}</div>
         <h3>${escHtml(it.title)}</h3>
@@ -284,54 +295,6 @@ function storyHtml(it, { showImage = true } = {}) {
       </div>${img}
     </a>${links}</li>`;
 }
-
-const FACTIVA_URL = 'https://app.dowjones.com/factiva/home';
-// If Factiva's search page turns out to take the query in its address, put the pattern here with {q}
-// (e.g. 'https://app.dowjones.com/factiva/search?q={q}'): the button then opens the results directly.
-const FACTIVA_SEARCH = null;
-
-// Factiva treats words without connectors as one exact phrase, and web headlines often differ from
-// the stored version. So build "word and word and ..." from the headline's most distinctive words.
-const FX_STOP = new Set(('a an and are as at be but by for from has have he her his how in into is it its new of on or '
-  + 'over says said she than that the their them they this to up was we were what when who why will with after about '
-  + 'amid as more most could would should can may first last year years plans set back out against between').split(' '));
-function factivaQuery(title) {
-  const words = title
-    .replace(/^[\p{L}\s]{2,20}:\s+/u, '')            // "FirstFT: …", "Opinion: …" labels aren't in the article
-    .replace(/[‘’'`]s\b/g, '')
-    .split(/[^\p{L}\p{N}$£€%.-]+/u)
-    .map(w => w.replace(/^[.-]+|[.-]+$/g, ''))
-    .filter(w => w.length > 2 && !/[$£€%\d]/.test(w) && !FX_STOP.has(w.toLowerCase()));  // amounts are written differently in Factiva
-  const uniq = [...new Map(words.map(w => [w.toLowerCase(), w])).values()];
-  // prefer names (capitalised, except the sentence-initial word), then longer words
-  const rank = (w, i) => (i > 0 && /^\p{Lu}/u.test(w) ? 2 : 0) + Math.min(w.length, 10) / 10;
-  const picked = uniq.map((w, i) => ({ w, i, r: rank(w, i) })).sort((a, b) => b.r - a.r).slice(0, 4).sort((a, b) => a.i - b.i);
-  return picked.map(p => p.w).join(' and ') || title;
-}
-function toast(msg) {
-  let t = $('#toast');
-  if (!t) { t = document.createElement('div'); t.id = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(toast.timer);
-  toast.timer = setTimeout(() => t.classList.remove('show'), 3500);
-}
-document.addEventListener('click', e => {
-  const b = e.target.closest('.fx-btn');
-  if (!b) return;
-  const query = factivaQuery(b.dataset.headline);
-  if (FACTIVA_SEARCH) {
-    window.open(FACTIVA_SEARCH.replace('{q}', encodeURIComponent(query)), '_blank', 'noopener');
-  } else {
-    // Start the copy and the open in the same tap: iOS only allows either inside a user gesture.
-    const copied = navigator.clipboard?.writeText(query);
-    window.open(FACTIVA_URL, '_blank', 'noopener');
-    Promise.resolve(copied).then(() => toast(`Copied “${query}”: paste it into Factiva’s search`))
-      .catch(() => toast(`Search Factiva for: ${query}`));
-  }
-  markRead(b.dataset.link);
-  b.closest('li')?.classList.add('read');
-});
 
 function renderNews() {
   $('#top').innerHTML = DATA.top.map(it => storyHtml(it)).join('') || '<li class="muted">No stories.</li>';

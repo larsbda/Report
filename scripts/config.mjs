@@ -2,7 +2,7 @@
 
 export const FEEDS = [
   {
-    // Wall Street Journal public headline feeds (Dow Jones). Full articles: Factiva via NTNU, or wsj.com.
+    // Wall Street Journal public headline feeds (Dow Jones). Links try archive.ph with a WSJ fallback.
     id: 'wsj', name: 'Wall Street Journal', short: 'WSJ', boost: 0.5,
     urls: [
       'https://feeds.content.dowjones.io/public/rss/RSSWorldNews',

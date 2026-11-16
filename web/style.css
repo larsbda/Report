@@ -140,16 +140,7 @@ button { font: inherit; color: inherit; }
 .src { font-weight: 700; letter-spacing: .03em; }
 .src-wsj { color: var(--wsj); } .src-dn { color: var(--dn); } .src-nrk { color: var(--nrk); }
 .story-links { display: flex; gap: 18px; padding: 0 0 10px; margin-top: -6px; }
-.fx-btn {
-  background: none; border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px;
-  color: var(--muted); font-size: 12px; font-weight: 600; cursor: pointer;
-}
-#toast {
-  position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 20px); transform: translate(-50%, 20px);
-  max-width: calc(100% - 32px); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 12px;
-  font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 10;
-}
-#toast.show { opacity: 1; transform: translate(-50%, 0); }
+.story-links a { display: inline-block; border-top: 0; padding: 6px 0; color: var(--muted); font-size: 12px; text-decoration: underline; text-underline-offset: 3px; }
 .chip { background: var(--chip); border-radius: 999px; padding: 1px 8px; font-size: 11px; }
 .story.read { opacity: .5; }
 .compact .story h3 { font-size: 16px; }
