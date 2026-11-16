@@ -39,10 +39,16 @@ only stored as a GitHub secret, never published.
 
 ### Weather location from the calendar
 
-Add an all-day event titled `📍 Oslo` (or `City: Oslo`, `Weather: Portland, Maine`) covering the days you're
-there. The weather shows that city while the event lasts, then goes back to the default. Picking a city by
-hand with "Change weather location" overrides the calendar for the rest of that day. Place events are not
-shown in the agenda.
+The weather follows your calendar automatically, using the events' **Location** field:
+
+- Location is a city (`Sanya`): you're there from the event's start until 24 hours after it ends.
+- Location is a route (`Shenzhen East to Sanya`): you're at the origin during the trip and at the destination after it.
+- A travel title ending in "to X" (`…and flight to Kunming`, `Night train to Sanya`): you're in X after it ends.
+- Stations, airports and addresses are reduced to their city. Non-city locations (`Café X`) are ignored.
+
+The most recently started place wins, and after 24 hours with no place it goes back to the default city.
+To force a city, add an event titled `📍 Oslo` (or `City: Oslo`). It wins while it lasts and is hidden from
+the agenda. Picking a city by hand with "Change weather location" overrides the calendar for the rest of that day.
 
 ## Local development
 

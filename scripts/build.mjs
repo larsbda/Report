@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { FEEDS, TOPICS, NEGATIVE, LIMITS, PAPERS, CALENDAR } from './config.mjs';
 import { eventsInWindow } from './ics.mjs';
+import { inferPlaces } from './places.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = path.join(ROOT, 'dist');
@@ -195,41 +196,23 @@ async function buildCalendar(now) {
   const url = process.env.CALENDAR_ICS_URL?.trim();
   if (!url) return null;
   const urls = url.split(/[\s,]+/).filter(Boolean).map(u => u.replace(/^webcal:/i, 'https:'));
-  const events = [];
+  const events = [], recent = [];
   let ok = 0;
   for (const u of urls) {
-    try { events.push(...eventsInWindow(await get(u), { now, ...CALENDAR })); ok++; }
-    catch (e) { console.warn(`calendar feed failed (${e.message})`); }   // don't log the URL: it's a secret
+    try {
+      const ics = await get(u);
+      events.push(...eventsInWindow(ics, { now, ...CALENDAR }));
+      // wider look-back for working out where you are (you're still in Kunming the morning after the last Kunming event)
+      recent.push(...eventsInWindow(ics, { now, ...CALENDAR, pastHours: 48 }));
+      ok++;
+    } catch (e) { console.warn(`calendar feed failed (${e.message})`); }   // don't log the URL: it's a secret
   }
   events.sort((a, b) => (a.allDay === b.allDay ? 0 : a.allDay ? -1 : 1) || a.start.localeCompare(b.start));
 
-  // "📍 Oslo" / "City: Oslo" / "Weather: Oslo, Norway" events set the weather location for their duration.
-  const places = [], geo = new Map();
-  for (const e of events) {
-    const m = e.title.match(CALENDAR.placePattern);
-    if (!m) continue;
-    const q = m[1].trim();
-    if (!geo.has(q)) geo.set(q, await geocode(q));
-    const g = geo.get(q);
-    if (g) places.push({ ...g, allDay: e.allDay, start: e.start, end: e.end });
-    else console.warn('calendar: a 📍 place could not be geocoded');
-  }
+  const places = await inferPlaces(recent);
   const agenda = events.filter(e => !CALENDAR.placePattern.test(e.title));
-  console.log(`calendar: ${agenda.length} events, ${places.length} places from ${ok}/${urls.length} calendars`);
+  console.log(`calendar: ${agenda.length} events, ${places.length} location fixes from ${ok}/${urls.length} calendars`);
   return { ok: ok > 0, events: agenda, places };
-}
-
-// "Oslo" or "Portland, Maine" / "Portland, US": the part after the comma picks between same-named places.
-async function geocode(q) {
-  const [name, ...rest] = q.split(',').map(s => s.trim());
-  const hint = rest.join(' ').toLowerCase();
-  try {
-    const r = JSON.parse(await get(`https://geocoding-api.open-meteo.com/v1/search?count=10&name=${encodeURIComponent(name)}`));
-    const res = r.results || [];
-    const pick = (hint && res.find(x => [x.country, x.country_code, x.admin1]
-      .some(v => v && (hint.includes(v.toLowerCase()) || v.toLowerCase().includes(hint))))) || res[0];
-    return pick ? { name: pick.name, lat: pick.latitude, lon: pick.longitude } : null;
-  } catch { return null; }
 }
 
 // ---------- crypto ----------

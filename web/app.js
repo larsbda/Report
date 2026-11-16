@@ -80,13 +80,12 @@ function aqiBadge(v) {
 // Where to show weather for, in priority order:
 // 1. a city picked by hand today, 2. a "📍 City" calendar event covering now, 3. the last hand-picked city, 4. Shanghai.
 function activePlace(cal) {
-  if (!cal?.places?.length) return null;
-  const now = new Date(), key = localDateKey(now);
-  const active = cal.places.filter(p => p.allDay
-    ? p.start <= key && key < p.end
-    : Date.parse(p.start) <= now.getTime() && now.getTime() < Date.parse(p.end));
-  // the most recently started one wins (a weekend trip inside a longer stay)
-  return active.sort((a, b) => b.start.localeCompare(a.start))[0] || null;
+  const t = Date.now();
+  const valid = (cal?.places || []).filter(p => p.from && Date.parse(p.from) <= t && t < Date.parse(p.until));
+  if (!valid.length) return null;
+  // explicit "📍 City" events win; otherwise the most recently started fix (where you most recently went)
+  const pinned = valid.filter(p => p.explicit);
+  return (pinned.length ? pinned : valid).sort((a, b) => Date.parse(b.from) - Date.parse(a.from))[0];
 }
 function weatherLocation() {
   const manual = store.get('mr-loc', null);

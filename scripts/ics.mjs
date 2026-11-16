@@ -51,7 +51,7 @@ function tzOffset(ts, tz) {
   return Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second) - Math.floor(ts / 1000) * 1000;
 }
 
-function wallToUtc(wall, tz) {
+export function wallToUtc(wall, tz) {
   if (tz === 'UTC') return wall;
   try {
     const guess = wall - tzOffset(wall, tz);
