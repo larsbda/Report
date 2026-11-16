@@ -41,22 +41,26 @@
     </header>
 
     <section id="weather" class="card weather"><p class="muted">Loading weather…</p></section>
-    <section id="calendar" class="card" hidden></section>
+    <details id="calendar" class="card sec" data-key="cal" open hidden>
+      <summary class="section-title">Calendar <span class="count" id="cal-count"></span></summary>
+      <div id="cal-body"></div>
+    </details>
 
-    <section>
-      <h2 class="section-title">Top stories</h2>
+    <details class="sec" data-key="top" open>
+      <summary class="section-title">Top stories <span class="count" id="top-count"></span></summary>
       <ol id="top" class="stories"></ol>
-    </section>
+    </details>
 
-    <section>
+    <details class="sec" data-key="sources" open>
+      <summary class="section-title">More by source</summary>
       <div class="tabs" role="tablist" id="source-tabs"></div>
       <ol id="source-list" class="stories compact"></ol>
-    </section>
+    </details>
 
-    <section id="papers-section">
-      <h2 class="section-title">Papers worth a look</h2>
+    <details id="papers-section" class="sec" data-key="papers" open>
+      <summary class="section-title">Papers worth a look <span class="count" id="papers-count"></span></summary>
       <ol id="papers" class="papers"></ol>
-    </section>
+    </details>
 
     <footer class="foot">
       <p id="updated" class="muted"></p>

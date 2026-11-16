@@ -70,6 +70,25 @@ button { font: inherit; color: inherit; }
   color: var(--muted); margin: 26px 0 10px;
 }
 
+/* collapsible sections */
+.sec > summary {
+  list-style: none; cursor: pointer; display: flex; align-items: center; gap: 8px;
+  padding: 6px 0; -webkit-tap-highlight-color: transparent; user-select: none;
+}
+.sec > summary::-webkit-details-marker { display: none; }
+.sec > summary::after {
+  content: ""; margin-left: auto; width: 8px; height: 8px;
+  border-right: 2px solid currentColor; border-bottom: 2px solid currentColor;
+  transform: rotate(45deg); transition: transform .2s; margin-right: 4px;
+}
+.sec:not([open]) > summary::after { transform: rotate(-45deg); }
+.sec .count { font-weight: 600; color: var(--muted); opacity: .7; }
+.sec:not([open]) { margin-bottom: 0; }
+.card.sec > summary { margin: 0; }
+.card.sec[open] > summary { margin-bottom: 10px; }
+.sec .tabs { margin-top: 4px; }
+.w-via { font-size: 11px; color: var(--accent); }
+
 /* weather */
 .w-main { display: flex; align-items: center; gap: 14px; }
 .w-icon { font-size: 46px; line-height: 1; }

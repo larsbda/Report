@@ -202,8 +202,34 @@ async function buildCalendar(now) {
     catch (e) { console.warn(`calendar feed failed (${e.message})`); }   // don't log the URL: it's a secret
   }
   events.sort((a, b) => (a.allDay === b.allDay ? 0 : a.allDay ? -1 : 1) || a.start.localeCompare(b.start));
-  console.log(`calendar: ${events.length} events from ${ok}/${urls.length} calendars`);
-  return { ok: ok > 0, events };
+
+  // "📍 Oslo" / "City: Oslo" / "Weather: Oslo, Norway" events set the weather location for their duration.
+  const places = [], geo = new Map();
+  for (const e of events) {
+    const m = e.title.match(CALENDAR.placePattern);
+    if (!m) continue;
+    const q = m[1].trim();
+    if (!geo.has(q)) geo.set(q, await geocode(q));
+    const g = geo.get(q);
+    if (g) places.push({ ...g, allDay: e.allDay, start: e.start, end: e.end });
+    else console.warn('calendar: a 📍 place could not be geocoded');
+  }
+  const agenda = events.filter(e => !CALENDAR.placePattern.test(e.title));
+  console.log(`calendar: ${agenda.length} events, ${places.length} places from ${ok}/${urls.length} calendars`);
+  return { ok: ok > 0, events: agenda, places };
+}
+
+// "Oslo" or "Portland, Maine" / "Portland, US": the part after the comma picks between same-named places.
+async function geocode(q) {
+  const [name, ...rest] = q.split(',').map(s => s.trim());
+  const hint = rest.join(' ').toLowerCase();
+  try {
+    const r = JSON.parse(await get(`https://geocoding-api.open-meteo.com/v1/search?count=10&name=${encodeURIComponent(name)}`));
+    const res = r.results || [];
+    const pick = (hint && res.find(x => [x.country, x.country_code, x.admin1]
+      .some(v => v && (hint.includes(v.toLowerCase()) || v.toLowerCase().includes(hint))))) || res[0];
+    return pick ? { name: pick.name, lat: pick.latitude, lon: pick.longitude } : null;
+  } catch { return null; }
 }
 
 // ---------- crypto ----------

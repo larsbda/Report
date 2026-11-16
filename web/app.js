@@ -77,8 +77,27 @@ function aqiBadge(v) {
   return `<span>AQI <span class="aqi" style="background:${color}">${Math.round(v)}</span> ${label}</span>`;
 }
 
+// Where to show weather for, in priority order:
+// 1. a city picked by hand today, 2. a "📍 City" calendar event covering now, 3. the last hand-picked city, 4. Shanghai.
+function activePlace(cal) {
+  if (!cal?.places?.length) return null;
+  const now = new Date(), key = localDateKey(now);
+  const active = cal.places.filter(p => p.allDay
+    ? p.start <= key && key < p.end
+    : Date.parse(p.start) <= now.getTime() && now.getTime() < Date.parse(p.end));
+  // the most recently started one wins (a weekend trip inside a longer stay)
+  return active.sort((a, b) => b.start.localeCompare(a.start))[0] || null;
+}
+function weatherLocation() {
+  const manual = store.get('mr-loc', null);
+  if (manual && store.get('mr-loc-day', null) === localDateKey(new Date())) return manual;
+  const place = activePlace(DATA?.calendar);
+  if (place) return { name: place.name, lat: place.lat, lon: place.lon, via: 'calendar' };
+  return manual || DEFAULT_LOC;
+}
+
 async function renderWeather() {
-  const loc = store.get('mr-loc', DEFAULT_LOC);
+  const loc = weatherLocation();
   const el = $('#weather');
   try {
     const q = `latitude=${loc.lat}&longitude=${loc.lon}&timezone=auto`;
@@ -106,7 +125,7 @@ async function renderWeather() {
           <div class="w-temp">${Math.round(c.temperature_2m)}°</div>
           <div class="w-desc">${now.text}</div>
         </div>
-        <div class="w-loc"><strong>${escHtml(loc.name)}</strong>H ${Math.round(d.temperature_2m_max[0])}° · L ${Math.round(d.temperature_2m_min[0])}°</div>
+        <div class="w-loc"><strong>${escHtml(loc.name)}</strong>${loc.via === 'calendar' ? '<span class="w-via">from calendar</span><br>' : ''}H ${Math.round(d.temperature_2m_max[0])}° · L ${Math.round(d.temperature_2m_min[0])}°</div>
       </div>
       <div class="w-hours">${hours.join('')}</div>
       <div class="w-stats">
@@ -123,13 +142,14 @@ async function renderWeather() {
 }
 
 async function changeLocation() {
-  const name = prompt('City for weather:', store.get('mr-loc', DEFAULT_LOC).name);
+  const name = prompt('City for weather (overrides your calendar for today):', weatherLocation().name);
   if (!name) return;
   try {
     const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?count=1&name=${encodeURIComponent(name)}`).then(r => r.json());
     const g = r.results?.[0];
     if (!g) return alert('Could not find that place.');
     store.set('mr-loc', { name: g.name, lat: g.latitude, lon: g.longitude });
+    store.set('mr-loc-day', localDateKey(new Date()));
     renderWeather();
   } catch { alert('Lookup failed. Try again later.'); }
 }
@@ -157,9 +177,24 @@ function renderCalendar(cal) {
     }).join('');
     return `<p class="cal-day">${label}</p><ul class="cal-list">${items}</ul>`;
   };
-  el.innerHTML = (cal.ok ? '' : '<p class="muted">Calendar could not be fetched on the last update.</p>') +
+  const todayCount = cal.events.filter(e => covers(e, todayKey)).length;
+  $('#cal-count').textContent = todayCount ? `· ${todayCount} today` : '';
+  $('#cal-body').innerHTML = (cal.ok ? '' : '<p class="muted">Calendar could not be fetched on the last update.</p>') +
     block('Today', todayKey, true) + block('Tomorrow', tmrKey, false);
 }
+
+// ---------- collapsible sections (remembered per device) ----------
+function initSections() {
+  const folded = new Set(store.get('mr-folded', []));
+  document.querySelectorAll('details.sec').forEach(d => {
+    d.open = !folded.has(d.dataset.key);
+    d.addEventListener('toggle', () => {
+      d.open ? folded.delete(d.dataset.key) : folded.add(d.dataset.key);
+      store.set('mr-folded', [...folded]);
+    });
+  });
+}
+initSections();
 
 // ---------- news ----------
 let DATA = null;
@@ -181,6 +216,7 @@ function storyHtml(it, { showImage = true } = {}) {
 
 function renderNews() {
   $('#top').innerHTML = DATA.top.map(it => storyHtml(it)).join('') || '<li class="muted">No stories.</li>';
+  $('#top-count').textContent = DATA.top.length ? `· ${DATA.top.length}` : '';
   const tabs = $('#source-tabs');
   let active = store.get('mr-tab', DATA.sources[0]?.id);
   if (!DATA.sources.some(s => s.id === active)) active = DATA.sources[0]?.id;
@@ -198,6 +234,7 @@ function renderNews() {
 function renderPapers() {
   const list = DATA.papers || [];
   $('#papers-section').hidden = !list.length;
+  $('#papers-count').textContent = list.length ? `· ${list.length}` : '';
   $('#papers').innerHTML = list.map(p => {
     const authors = p.authors.slice(0, 3).join(', ') + (p.authors.length > 3 ? ' et al.' : '');
     return `<li class="paper${readSet.has(p.link) ? ' read' : ''}">

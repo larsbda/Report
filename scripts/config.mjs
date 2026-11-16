@@ -73,4 +73,8 @@ export const PAPERS = {
 };
 
 // Used for calendar events without a time zone ("floating" times).
-export const CALENDAR = { defaultTz: 'Asia/Shanghai', pastHours: 12, futureHours: 60 };
+// placePattern: calendar events titled like this set the weather location while they last.
+export const CALENDAR = {
+  defaultTz: 'Asia/Shanghai', pastHours: 12, futureHours: 60,
+  placePattern: /^\s*(?:📍️?|city\s*:|weather\s*:)\s*(.+)$/iu,
+};
