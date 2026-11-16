@@ -30,8 +30,6 @@ jobs:
           node-version: 20
       - id: pages
         uses: actions/configure-pages@v5
-      - name: Check article copy verification
-        run: node --test scripts/article-copies.test.mjs
       - name: Build encrypted report
         run: node scripts/build.mjs
         env:

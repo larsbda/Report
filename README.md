@@ -53,7 +53,6 @@ the agenda. Picking a city by hand with "Change weather location" overrides the 
 ## Local development
 
 ```sh
-node --test scripts/article-copies.test.mjs                       # verification and tick/fallback checks
 REPORT_PASSPHRASE=test WRITE_PLAINTEXT=1 node scripts/build.mjs   # data.debug.json shows the ranking
 python3 -m http.server -d dist 8000                               # open http://localhost:8000, unlock with "test"
 ```
@@ -65,15 +64,8 @@ python3 -m http.server -d dist 8000                               # open http://
 - GitHub pauses scheduled workflows on public repos after 60 days without commits. If the report stops
   updating, push any commit or press "Run workflow".
 - If a feed or arXiv fails during a run, the previous run's items for that section are kept.
-- A small green ✓ beside FT means an archive.is/archive.ph or Wayback copy passed full-body checks during the report build;
-  tapping that story opens the checked archive URL. Other stories open the publisher. No tick means
-  unverified, not necessarily unavailable. Checks expire after six hours and are repeated each build.
-  The checker requires matching article URL and headline, publisher article-body metadata and word count,
-  and the entire metadata body in the article HTML. Missing metadata, previews, errors and timeouts get no tick.
-  This is conservative evidence of completeness, not a guarantee of future availability or browser rendering.
-  ByeByePaywall itself only offers links to other services and cannot verify article content.
-  Archive.ph is checked first, then Wayback. Reader-supplied links in `scripts/archive-candidates.mjs`
-  are candidates for the same verification, never automatic approvals.
-  When a supplied or discovered snapshot cannot be verified, a separate **Archive ↗** link still opens
-  it directly (a CAPTCHA may appear), alongside **FT original**. It gets no verification tick and the
-  story headline keeps opening FT. Checked copies open from the headline and also keep both links.
+- Story links open the publisher (FT, DN, NRK). DN opens logged in through your DN subscription.
+- FT stories also get **Read in Factiva ↗**, for reading through NTNU's Factiva licence. Factiva has no
+  link format for a pre-filled search, so the button copies the headline and opens Factiva; paste it into
+  the search there. The build never fetches article text from Factiva or anywhere else: that would break
+  the licence terms and publish licensed content.

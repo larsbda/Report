@@ -269,36 +269,44 @@ const TOPIC_LABEL = { economy: 'Economy', finance: 'Finance', ai: 'AI', politics
 
 function storyHtml(it, { showImage = true } = {}) {
   const src = DATA.sources.find(s => s.id === it.source);
-  const validArchive = candidate => {
-    if (it.source !== 'ft' || !candidate) return false;
-    if (candidate.provider === 'wayback') return /^https:\/\/web\.archive\.org\/web\/\d{14}id_\/https:\/\/(?:www\.)?ft\.com\/content\/[a-z0-9-]+$/i.test(candidate.url)
-      && candidate.url.endsWith('/' + it.link);
-    return candidate.provider === 'archiveis' && candidate.originalLink === it.link
-      && /^https:\/\/archive\.(?:ph|is|today|li|vn|md|fo)\/(?:[a-z0-9]{5,12}|(?:\d{14}|\d{4}\.\d{2}\.\d{2}-\d{6})\/https:\/\/(?:www\.)?ft\.com\/content\/[a-z0-9-]+)$/i.test(candidate.url)
-      && (/^https:\/\/archive\.[a-z]+\/[a-z0-9]{5,12}$/i.test(candidate.url) || candidate.url.endsWith('/' + it.link));
-  };
-  const copy = validArchive(it.articleCopy)
-    && Date.now() - Date.parse(it.articleCopy.checkedAt) >= 0
-    && Date.now() - Date.parse(it.articleCopy.checkedAt) < 6 * 3600e3 ? it.articleCopy : null;
-  const tick = copy ? '<span class="copy-tick" role="img" aria-label="Full archive copy checked; opens outside FT" title="Full archive copy checked; opens outside FT">✓</span>' : '';
-  const archive = copy || (validArchive(it.archiveLink) ? it.archiveLink : null)
-    || (validArchive(it.articleCopy) ? it.articleCopy : null);
-  const archiveLabel = copy ? 'Open checked archive copy' : 'Open archive copy; full article not verified, CAPTCHA may be required';
-  const links = archive ? `<div class="story-links">
-    <a href="${escHtml(archive.url)}" target="_blank" rel="noopener noreferrer" data-link="${escHtml(it.link)}" title="${archiveLabel}" aria-label="${archiveLabel}">Archive ↗</a>
-    <a href="${escHtml(safeUrl(it.link))}" target="_blank" rel="noopener noreferrer" data-link="${escHtml(it.link)}">FT original</a>
+  // FT stories: read through NTNU's Factiva licence. Factiva has no link format for a pre-filled
+  // search, so the button copies the headline and opens Factiva; paste it into the search box there.
+  const links = it.source === 'ft' ? `<div class="story-links">
+    <button class="fx-btn" data-headline="${escHtml(it.title)}" data-link="${escHtml(it.link)}">Read in Factiva ↗</button>
   </div>` : '';
   const chips = (it.topics || []).map(t => `<span class="chip">${TOPIC_LABEL[t] || t}</span>`).join('');
   const img = showImage && it.image ? `<img src="${escHtml(safeUrl(it.image))}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '';
   return `<li class="story${readSet.has(it.link) ? ' read' : ''}">
-    <a href="${escHtml(safeUrl(copy?.url || it.link))}" target="_blank" rel="noopener noreferrer" data-link="${escHtml(it.link)}">
+    <a href="${escHtml(safeUrl(it.link))}" target="_blank" rel="noopener noreferrer" data-link="${escHtml(it.link)}">
       <div class="story-body">
-        <div class="meta"><span class="src src-${it.source}">${escHtml(src?.short || it.source)}</span>${tick}<span>${ago(it.published)}</span>${chips}</div>
+        <div class="meta"><span class="src src-${it.source}">${escHtml(src?.short || it.source)}</span><span>${ago(it.published)}</span>${chips}</div>
         <h3>${escHtml(it.title)}</h3>
         ${it.desc ? `<p>${escHtml(it.desc)}</p>` : ''}
       </div>${img}
     </a>${links}</li>`;
 }
+
+const FACTIVA_URL = 'https://global.factiva.com/sb/default.aspx?lnep=hp';
+function toast(msg) {
+  let t = $('#toast');
+  if (!t) { t = document.createElement('div'); t.id = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('.fx-btn');
+  if (!b) return;
+  const headline = b.dataset.headline;
+  // Start the copy and the open in the same tap: iOS only allows either inside a user gesture.
+  const copied = navigator.clipboard?.writeText(headline);
+  window.open(FACTIVA_URL, '_blank', 'noopener');
+  Promise.resolve(copied).then(() => toast('Headline copied: paste it into Factiva’s search'))
+    .catch(() => toast(`Search Factiva for: ${headline}`));
+  markRead(b.dataset.link);
+  b.closest('li')?.classList.add('read');
+});
 
 function renderNews() {
   $('#top').innerHTML = DATA.top.map(it => storyHtml(it)).join('') || '<li class="muted">No stories.</li>';
