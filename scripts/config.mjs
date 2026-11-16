@@ -11,6 +11,15 @@ export const FEEDS = [
       'https://feeds.content.dowjones.io/public/rss/RSSWSJD',
     ],
   },
+  {
+    id: 'ft', name: 'Financial Times', short: 'FT', boost: 0.5,
+    urls: [
+      'https://www.ft.com/rss/home',
+      'https://www.ft.com/world?format=rss',
+      'https://www.ft.com/markets?format=rss',
+      'https://www.ft.com/technology?format=rss',
+    ],
+  },
   { id: 'dn', name: 'Dagens Næringsliv', short: 'DN', boost: 0.5, urls: ['https://services.dn.no/api/feed/rss/'] },
   { id: 'nrk', name: 'NRK', short: 'NRK', boost: 0, urls: ['https://www.nrk.no/toppsaker.rss'] },
 ];

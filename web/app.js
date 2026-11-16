@@ -269,11 +269,12 @@ const TOPIC_LABEL = { economy: 'Economy', finance: 'Finance', ai: 'AI', politics
 
 function storyHtml(it, { showImage = true } = {}) {
   const src = DATA.sources.find(s => s.id === it.source);
+  const archiveHost = { wsj: 'wsj.com', ft: 'ft.com' }[it.source];
   let archive = null;
-  if (it.source === 'wsj') {
+  if (archiveHost) {
     try {
       const url = new URL(it.link);
-      if (/^https?:$/.test(url.protocol) && /^(?:www\.)?wsj\.com$/i.test(url.hostname)
+      if (/^https?:$/.test(url.protocol) && [archiveHost, `www.${archiveHost}`].includes(url.hostname)
         && !url.username && !url.password && !url.port && url.pathname !== '/') {
         // Archive lookups use the article URL, without feed tracking parameters.
         archive = `https://archive.ph/newest/https://${url.host}${url.pathname}`;
@@ -282,7 +283,7 @@ function storyHtml(it, { showImage = true } = {}) {
   }
   const links = archive ? `<div class="story-links">
     <a href="${escHtml(archive)}" target="_blank" rel="noopener noreferrer" data-link="${escHtml(it.link)}" title="Look for an archived copy; availability is not verified">Archive ↗</a>
-    <a href="${escHtml(safeUrl(it.link))}" target="_blank" rel="noopener noreferrer" data-link="${escHtml(it.link)}">WSJ original</a>
+    <a href="${escHtml(safeUrl(it.link))}" target="_blank" rel="noopener noreferrer" data-link="${escHtml(it.link)}">${escHtml(src?.short || it.source.toUpperCase())} original</a>
   </div>` : '';
   const chips = (it.topics || []).map(t => `<span class="chip">${TOPIC_LABEL[t] || t}</span>`).join('');
   const img = showImage && it.image ? `<img src="${escHtml(safeUrl(it.image))}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '';

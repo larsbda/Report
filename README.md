@@ -1,6 +1,6 @@
 # Morning
 
-A private morning report: weather, your calendar, top stories from WSJ / DN / NRK, and a few arXiv papers.
+A private morning report: weather, your calendar, top stories from WSJ / FT / DN / NRK, and a few arXiv papers.
 It's a static web app on GitHub Pages, installed on the phone with "Add to Home Screen".
 
 ## How it works
@@ -64,8 +64,8 @@ python3 -m http.server -d dist 8000                               # open http://
 - GitHub pauses scheduled workflows on public repos after 60 days without commits. If the report stops
   updating, push any commit or press "Run workflow".
 - If a feed or arXiv fails during a run, the previous run's items for that section are kept.
-- WSJ headlines open `https://archive.ph/newest/` followed by the article URL, without feed tracking
-  parameters. Each story also has **Archive ↗** and **WSJ original** links. Archive availability is not
+- WSJ and FT headlines open `https://archive.ph/newest/` followed by the article URL, without feed tracking
+  parameters. Each story also has **Archive ↗** and a publisher original link. Archive availability is not
   verified: archive.ph may show a CAPTCHA or have no saved copy, so there is no verification tick.
 - DN and NRK links open the publisher directly. DN uses your existing browser subscription session.
 - The build fetches public headlines and summaries, never full article text.
