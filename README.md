@@ -37,6 +37,13 @@ Put that link in the `CALENDAR_ICS_URL` secret. For several calendars, put sever
 "Public" here means anyone who has the link can read the calendar. The link is a long random URL, and it is
 only stored as a GitHub secret, never published.
 
+### Weather location from the calendar
+
+Add an all-day event titled `📍 Oslo` (or `City: Oslo`, `Weather: Portland, Maine`) covering the days you're
+there. The weather shows that city while the event lasts, then goes back to the default. Picking a city by
+hand with "Change weather location" overrides the calendar for the rest of that day. Place events are not
+shown in the agenda.
+
 ## Local development
 
 ```sh
