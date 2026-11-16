@@ -72,16 +72,42 @@ export function parseTodos(text, { excludeLists = [] } = {}) {
   return items;
 }
 
-export async function fetchTodos(gistId, { excludeLists = [], token } = {}) {
-  const url = `https://api.github.com/gists/${encodeURIComponent(gistId)}`;
+// Accepts the bare ID, the gist address, or either with stray whitespace.
+export function gistIdFrom(s) {
+  const t = String(s || '').trim();
+  const m = t.match(/([0-9a-f]{20,})\/?(?:#.*)?$/i);
+  return m ? m[1] : t.replace(/^.*\//, '');
+}
+
+// Tries, in order: the gist API with the Action's token, the API without a token (60 calls/hour per IP,
+// often used up on shared runners), and finally the raw file, which has no API limit.
+export async function fetchTodos(gistInput, { excludeLists = [], token, owner = 'larsbda' } = {}) {
+  const id = gistIdFrom(gistInput);
+  const api = `https://api.github.com/gists/${encodeURIComponent(id)}`;
   const headers = { 'user-agent': UA, accept: 'application/vnd.github+json' };
-  let r = token ? await fetch(url, { headers: { ...headers, authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(20000) }) : null;
-  if (!r || !r.ok) r = await fetch(url, { headers, signal: AbortSignal.timeout(20000) });
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  const gist = await r.json();
-  const file = gist.files?.['todos.json'] || Object.values(gist.files || {})[0];
-  if (!file) throw new Error('gist has no files');
-  let text = file.content;
-  if (file.truncated && file.raw_url) text = await (await fetch(file.raw_url, { headers })).text();
-  return { synced: gist.updated_at || null, items: parseTodos(text || '', { excludeLists }) };
+  const attempts = [];
+  const tryApi = async auth => {
+    const r = await fetch(api, { headers: auth ? { ...headers, authorization: `Bearer ${auth}` } : headers, signal: AbortSignal.timeout(20000) });
+    attempts.push(`api${auth ? '+token' : ''} ${r.status}`);
+    if (!r.ok) return null;
+    const gist = await r.json();
+    const file = gist.files?.['todos.json'] || Object.values(gist.files || {})[0];
+    if (!file) { attempts.push('gist has no files'); return null; }
+    let text = file.content;
+    if (file.truncated && file.raw_url) text = await (await fetch(file.raw_url, { headers })).text();
+    return { synced: gist.updated_at || null, text };
+  };
+  let got = null;
+  try { if (token) got = await tryApi(token); } catch (e) { attempts.push(`api+token ${e.message}`); }
+  try { if (!got) got = await tryApi(null); } catch (e) { attempts.push(`api ${e.message}`); }
+  if (!got) {
+    try {
+      const r = await fetch(`https://gist.githubusercontent.com/${owner}/${id}/raw/todos.json?t=${Date.now()}`,
+        { headers: { 'user-agent': UA }, signal: AbortSignal.timeout(20000) });
+      attempts.push(`raw ${r.status}`);
+      if (r.ok) got = { synced: null, text: await r.text() };
+    } catch (e) { attempts.push(`raw ${e.message}`); }
+  }
+  if (!got) throw new Error(attempts.join(', '));
+  return { synced: got.synced, via: attempts.at(-1), items: parseTodos(got.text || '', { excludeLists }) };
 }

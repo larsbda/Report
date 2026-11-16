@@ -222,12 +222,13 @@ async function buildTodos() {
   const id = process.env.TODOS_GIST_ID?.trim();
   if (!id) return null;
   try {
-    const t = await fetchTodos(id, { excludeLists: TODOS.excludeLists, token: process.env.GITHUB_TOKEN });
-    console.log(`todos: ${t.items.length} open reminders`);   // count only: logs are public
+    const t = await fetchTodos(id, { excludeLists: TODOS.excludeLists, token: process.env.GITHUB_TOKEN,
+      owner: process.env.GITHUB_REPOSITORY_OWNER || 'larsbda' });
+    console.log(`todos: ${t.items.length} open reminders (${t.via})`);   // count only: logs are public
     return { ok: true, ...t };
   } catch (e) {
-    console.warn(`todos failed (${e.message})`);
-    return { ok: false, synced: null, items: [] };
+    console.warn(`todos failed (${e.message})`);   // status codes only, never the gist ID
+    return { ok: false, synced: null, items: [], error: e.message };
   }
 }
 

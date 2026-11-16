@@ -231,7 +231,8 @@ function renderTodos(todos) {
   let html = section('Overdue', groups.overdue, 'overdue') + section('Today', groups.today) +
     section('Next 7 days', groups.soon) + section('Later', groups.later);
   for (const [list, ts] of undated) html += section(list || 'No date', ts, '', false);
-  if (!items.length) html = `<p class="muted" style="margin:0">${todos.ok ? 'Nothing open. Nice.' : 'Could not read your reminders on the last update.'}</p>`;
+  if (!items.length) html = `<p class="muted" style="margin:0">${todos.ok ? 'Nothing open. Nice.'
+    : 'Could not read your reminders on the last update.' + (todos.error ? `<br><small>${escHtml(todos.error)}</small>` : '')}</p>`;
   $('#todo-body').innerHTML = html;
 
   const urgent = groups.overdue.length + groups.today.length;
