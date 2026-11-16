@@ -407,11 +407,10 @@ $('#lock-form').addEventListener('submit', async e => {
 
 $('#lock-btn').addEventListener('click', () => { store.del('mr-pass'); DATA = null; $('#pass').value = ''; showLock(); });
 $('#change-loc').addEventListener('click', changeLocation);
-$('#refresh').addEventListener('click', async () => {
-  const btn = $('#refresh');
-  btn.classList.add('spin');
-  try { BLOB = null; await unlock(store.get('mr-pass', '')); } catch { showLock('Please unlock again.'); }
-  finally { btn.classList.remove('spin'); }
+// ↻ reloads the whole app, so it picks up new app code as well as the latest report.
+$('#refresh').addEventListener('click', () => {
+  $('#refresh').classList.add('spin');
+  location.reload();
 });
 
 // Re-render relative times and refresh data when the app comes back to the foreground.

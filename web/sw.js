@@ -1,4 +1,4 @@
-// Service worker: app shell is stale-while-revalidate, report data is network-first with offline fallback.
+// Service worker: app shell and report data are network-first, with the cache as offline fallback.
 const CACHE = 'morning-__BUILD__';
 const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
@@ -26,11 +26,18 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  e.respondWith(caches.match(e.request, { ignoreSearch: true }).then(hit => {
-    const net = fetch(e.request).then(res => {
+  // App code: network first so updates show up on the next open; the cached copy is used offline
+  // or when the network takes more than 4 seconds.
+  e.respondWith((async () => {
+    const net = fetch(e.request, { cache: 'no-cache' }).then(res => {
       if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); }
       return res;
-    }).catch(() => hit);
-    return hit || net;
-  }));
+    });
+    const slow = new Promise(r => setTimeout(r, 4000));
+    try {
+      const res = await Promise.race([net, slow.then(() => null)]);
+      if (res) return res;
+    } catch { /* offline */ }
+    return (await caches.match(e.request, { ignoreSearch: true })) || net;
+  })());
 });
