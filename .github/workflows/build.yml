@@ -1,0 +1,43 @@
+name: Build morning report
+
+on:
+  schedule:
+    - cron: "40 20 * * *"     # 04:40 Shanghai: ready before you wake (GitHub can run 10–30 min late)
+    - cron: "10 */3 * * *"    # refresh every 3 hours through the day
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - id: pages
+        uses: actions/configure-pages@v5
+      - name: Build encrypted report
+        run: node scripts/build.mjs
+        env:
+          REPORT_PASSPHRASE: ${{ secrets.REPORT_PASSPHRASE }}
+          CALENDAR_ICS_URL: ${{ secrets.CALENDAR_ICS_URL }}
+          REPORT_URL: ${{ steps.pages.outputs.base_url }}
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - id: deployment
+        uses: actions/deploy-pages@v4

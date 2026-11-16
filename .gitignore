@@ -1,0 +1,4 @@
+dist/
+data.debug.json
+.DS_Store
+node_modules/

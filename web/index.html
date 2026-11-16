@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <title>Morning</title>
+  <meta name="theme-color" content="#f6f3ee" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#141518" media="(prefers-color-scheme: dark)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Morning">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="lock" class="lock" hidden>
+    <form id="lock-form" class="lock-card" autocomplete="on">
+      <div class="lock-sun" aria-hidden="true"></div>
+      <h1>Morning</h1>
+      <input type="text" name="username" value="morning-report" autocomplete="username" hidden>
+      <input id="pass" type="password" name="password" placeholder="Passphrase" autocomplete="current-password" required>
+      <button type="submit">Unlock</button>
+      <p id="lock-msg" class="lock-msg" role="status"></p>
+    </form>
+  </div>
+
+  <main id="app" hidden>
+    <header class="top">
+      <div>
+        <p id="greeting" class="eyebrow"></p>
+        <h1 id="today"></h1>
+      </div>
+      <button id="refresh" class="icon-btn" aria-label="Refresh">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+      </button>
+    </header>
+
+    <section id="weather" class="card weather"><p class="muted">Loading weather…</p></section>
+    <section id="calendar" class="card" hidden></section>
+
+    <section>
+      <h2 class="section-title">Top stories</h2>
+      <ol id="top" class="stories"></ol>
+    </section>
+
+    <section>
+      <div class="tabs" role="tablist" id="source-tabs"></div>
+      <ol id="source-list" class="stories compact"></ol>
+    </section>
+
+    <section id="papers-section">
+      <h2 class="section-title">Papers worth a look</h2>
+      <ol id="papers" class="papers"></ol>
+    </section>
+
+    <footer class="foot">
+      <p id="updated" class="muted"></p>
+      <p><button id="change-loc" class="link-btn">Change weather location</button> · <button id="lock-btn" class="link-btn">Lock</button></p>
+    </footer>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
