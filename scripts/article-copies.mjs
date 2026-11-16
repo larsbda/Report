@@ -1,6 +1,9 @@
 // Only mark a copy after retrieving its body. An archive lookup or HTTP 200 alone
 // says nothing about whether the capture contains the article or a paywall.
+import { ARCHIVE_CANDIDATES } from './archive-candidates.mjs';
+
 const FT_ARTICLE = /^https:\/\/(?:www\.)?ft\.com\/content\/[a-z0-9-]+$/i;
+const ARCHIVE_HOSTS = new Set(['archive.ph', 'archive.is', 'archive.today', 'archive.li', 'archive.vn', 'archive.md', 'archive.fo']);
 
 const decode = s => s.replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
   .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(+n))
@@ -63,6 +66,8 @@ async function get(url, fetcher, timeout) {
 
 export async function findArticleCopy(story, { fetcher = fetch, now = Date.now() } = {}) {
   if (story.source !== 'ft' || !FT_ARTICLE.test(story.link)) return null;
+  const archived = await findArchiveIsCopy(story, fetcher, now);
+  if (archived) return archived;
   try {
     const lookup = await get(`https://archive.org/wayback/available?url=${encodeURIComponent(story.link)}`, fetcher, 8000);
     const snapshot = (await lookup.json()).archived_snapshots?.closest;
@@ -75,6 +80,32 @@ export async function findArticleCopy(story, { fetcher = fetch, now = Date.now()
     if (!isFullArticle(await response.text(), story)) return null;
     return { url, checkedAt: new Date(now).toISOString(), provider: 'wayback' };
   } catch { return null; } // Outage, timeout, challenge or unexpected HTML: no tick.
+}
+
+function archiveIsTarget(url, original) {
+  try {
+    const u = new URL(url);
+    if (u.protocol !== 'https:' || !ARCHIVE_HOSTS.has(u.hostname) || u.port || u.username || u.password || u.search || u.hash) return false;
+    // Snapshots may redirect to a short permalink. The article metadata must
+    // independently match the original URL before either form can be approved.
+    if (/^\/[a-z0-9]{5,12}$/i.test(u.pathname)) return true;
+    const m = u.pathname.match(/^\/(?:\d{14}|\d{4}\.\d{2}\.\d{2}-\d{6})\/(https?:\/\/.*)$/);
+    if (!m) return false;
+    const target = new URL(m[1]);
+    target.protocol = 'https:';
+    return target.href === original;
+  } catch { return false; }
+}
+
+async function findArchiveIsCopy(story, fetcher, now) {
+  try {
+    const candidate = ARCHIVE_CANDIDATES[story.link] || `https://archive.ph/newest/${story.link}`;
+    const response = await get(candidate, fetcher, 10000);
+    if (!archiveIsTarget(response.url, story.link)) return null;
+    if (!/text\/html/i.test(response.headers.get('content-type') || '')) return null;
+    if (!isFullArticle(await response.text(), story)) return null;
+    return { url: response.url, originalLink: story.link, checkedAt: new Date(now).toISOString(), provider: 'archiveis' };
+  } catch { return null; }
 }
 
 export async function checkArticleCopies(news, options) {

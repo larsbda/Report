@@ -268,9 +268,13 @@ const TOPIC_LABEL = { economy: 'Economy', finance: 'Finance', ai: 'AI', politics
 
 function storyHtml(it, { showImage = true } = {}) {
   const src = DATA.sources.find(s => s.id === it.source);
-  const copy = it.source === 'ft' && it.articleCopy?.provider === 'wayback'
+  const wayback = it.articleCopy?.provider === 'wayback'
     && /^https:\/\/web\.archive\.org\/web\/\d{14}id_\/https:\/\/(?:www\.)?ft\.com\/content\/[a-z0-9-]+$/i.test(it.articleCopy.url)
-    && it.articleCopy.url.endsWith('/' + it.link)
+    && it.articleCopy.url.endsWith('/' + it.link);
+  const archiveIs = it.articleCopy?.provider === 'archiveis' && it.articleCopy.originalLink === it.link
+    && /^https:\/\/archive\.(?:ph|is|today|li|vn|md|fo)\/(?:[a-z0-9]{5,12}|(?:\d{14}|\d{4}\.\d{2}\.\d{2}-\d{6})\/https:\/\/(?:www\.)?ft\.com\/content\/[a-z0-9-]+)$/i.test(it.articleCopy.url)
+    && (/^https:\/\/archive\.[a-z]+\/[a-z0-9]{5,12}$/i.test(it.articleCopy.url) || it.articleCopy.url.endsWith('/' + it.link));
+  const copy = it.source === 'ft' && (wayback || archiveIs)
     && Date.now() - Date.parse(it.articleCopy.checkedAt) >= 0
     && Date.now() - Date.parse(it.articleCopy.checkedAt) < 6 * 3600e3 ? it.articleCopy : null;
   const tick = copy ? '<span class="copy-tick" role="img" aria-label="Full archive copy checked; opens outside FT" title="Full archive copy checked; opens outside FT">✓</span>' : '';

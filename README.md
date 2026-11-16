@@ -65,10 +65,12 @@ python3 -m http.server -d dist 8000                               # open http://
 - GitHub pauses scheduled workflows on public repos after 60 days without commits. If the report stops
   updating, push any commit or press "Run workflow".
 - If a feed or arXiv fails during a run, the previous run's items for that section are kept.
-- A small green ✓ beside FT means a Wayback copy passed full-body checks during the report build;
+- A small green ✓ beside FT means an archive.is/archive.ph or Wayback copy passed full-body checks during the report build;
   tapping that story opens the checked archive URL. Other stories open the publisher. No tick means
   unverified, not necessarily unavailable. Checks expire after six hours and are repeated each build.
   The checker requires matching article URL and headline, publisher article-body metadata and word count,
   and the entire metadata body in the article HTML. Missing metadata, previews, errors and timeouts get no tick.
   This is conservative evidence of completeness, not a guarantee of future availability or browser rendering.
   ByeByePaywall itself only offers links to other services and cannot verify article content.
+  Archive.ph is checked first, then Wayback. Reader-supplied links in `scripts/archive-candidates.mjs`
+  are candidates for the same verification, never automatic approvals.

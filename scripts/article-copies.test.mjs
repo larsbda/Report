@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { isFullArticle, findArticleCopy, checkArticleCopies } from './article-copies.mjs';
+import { ARCHIVE_CANDIDATES } from './archive-candidates.mjs';
 
 const story = { source: 'ft', link: 'https://www.ft.com/content/1234-abcd', title: 'An example financial report' };
 const body = Array.from({ length: 240 }, (_, i) => `word${i}`).join(' ');
@@ -53,6 +54,54 @@ test('checks duplicate stories once and removes carried-forward approvals', asyn
   assert.equal(old.articleCopy, undefined);
 });
 
+test('discovers archive.ph copies and verifies their bodies before choosing them', async () => {
+  const permalink = 'https://archive.ph/Ab123';
+  const requests = [];
+  const archiveFetcher = async url => {
+    requests.push(url);
+    return { ok: true, url: permalink, headers: new Headers({ 'content-type': 'text/html' }), text: async () => page() };
+  };
+  assert.deepEqual(await findArticleCopy(story, { fetcher: archiveFetcher, now }), {
+    url: permalink, originalLink: story.link, provider: 'archiveis', checkedAt: new Date(now).toISOString(),
+  });
+  assert.deepEqual(requests, [`https://archive.ph/newest/${story.link}`]);
+  // A preview or challenge must not earn a tick, even on a valid permalink.
+  for (const html of [page(body.slice(0, 100)), '<h1>Checking your browser</h1>']) {
+    assert.equal(await findArticleCopy(story, { now, fetcher: async url => {
+      if (url.startsWith('https://archive.org/')) return { ok: true, json: async () => ({ archived_snapshots: {} }) };
+      return { ...(await archiveFetcher(url)), text: async () => html };
+    } }), null);
+  }
+});
+
+test('the reader-supplied Jensen Huang URL is a candidate, never an automatic approval', async () => {
+  const original = 'https://www.ft.com/content/0f30a230-4d66-481b-a4fd-3a4ed0c45855';
+  const candidate = `https://archive.ph/20261115221210/${original}`;
+  assert.equal(ARCHIVE_CANDIDATES[original], candidate);
+  const requests = [];
+  const example = { ...story, link: original };
+  const fetchCandidate = html => async url => {
+    requests.push(url);
+    if (url.startsWith('https://archive.org/')) return { ok: true, json: async () => ({ archived_snapshots: {} }) };
+    return { ok: true, url: candidate, headers: new Headers({ 'content-type': 'text/html' }), text: async () => html };
+  };
+  assert.equal(await findArticleCopy(example, { fetcher: fetchCandidate('<h1>Not found</h1>'), now }), null);
+  assert.equal(requests[0], candidate);
+  // Synthetic metadata exercises the routing; it is not a fixture of the live copy.
+  const copy = await findArticleCopy(example, { fetcher: fetchCandidate(page(body, { ...metadata, mainEntityOfPage: original })), now });
+  assert.equal(copy?.url, candidate);
+  assert.equal(copy?.provider, 'archiveis');
+});
+
+test('archive.is rejects another article and lookalike hosts', async () => {
+  for (const target of ['https://archive.ph.evil.test/Ab123', `https://archive.ph/20261115221210/https://www.ft.com/content/wrong`, 'https://example.org/Ab123']) {
+    assert.equal(await findArticleCopy(story, { now, fetcher: async url => {
+      if (url.startsWith('https://archive.org/')) return { ok: true, json: async () => ({ archived_snapshots: {} }) };
+      return { ok: true, url: target, headers: new Headers({ 'content-type': 'text/html' }), text: async () => page() };
+    } }), null);
+  }
+});
+
 const code = readFileSync(new URL('../web/app.js', import.meta.url), 'utf8');
 const ctx = { DATA: { sources: [] }, TOPIC_LABEL: {}, readSet: new Set(), Date: class extends Date { static now() { return now; } },
   safeUrl: u => /^https?:\/\//i.test(u || '') ? u : '#', escHtml: s => String(s ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;'), ago: () => '' };
@@ -72,5 +121,23 @@ test('tick and destination agree; stale or invalid copies fall back to FT', () =
     const fallback = ctx.storyHtml({ ...story, articleCopy: copy });
     assert.ok(!fallback.includes('class="copy-tick"'));
     assert.ok(fallback.includes(`href="${story.link}"`));
+  }
+});
+
+test('archive.ph copies show the tick and open the checked permalink', () => {
+  const articleCopy = { url: 'https://archive.ph/Ab123', originalLink: story.link, provider: 'archiveis', checkedAt: new Date(now).toISOString() };
+  for (const url of [articleCopy.url, `https://archive.ph/20261115221210/${story.link}`]) {
+    const html = ctx.storyHtml({ ...story, articleCopy: { ...articleCopy, url } });
+    assert.ok(html.includes('class="copy-tick"'));
+    assert.ok(html.includes(`href="${url}"`));
+    assert.ok(html.includes(`data-link="${story.link}"`));
+  }
+  for (const copy of [{ ...articleCopy, originalLink: 'https://www.ft.com/content/wrong' },
+    { ...articleCopy, url: 'https://archive.ph.evil.test/Ab123' },
+    { ...articleCopy, url: 'https://archive.ph/newest/' + story.link },
+    { ...articleCopy, url: 'https://archive.ph/20261115221210/https://www.ft.com/content/wrong' }]) {
+    const html = ctx.storyHtml({ ...story, articleCopy: copy });
+    assert.ok(!html.includes('class="copy-tick"'));
+    assert.ok(html.includes(`href="${story.link}"`));
   }
 });
