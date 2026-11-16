@@ -269,10 +269,11 @@ const TOPIC_LABEL = { economy: 'Economy', finance: 'Finance', ai: 'AI', politics
 
 function storyHtml(it, { showImage = true } = {}) {
   const src = DATA.sources.find(s => s.id === it.source);
-  // FT stories: read through NTNU's Factiva licence. Factiva has no link format for a pre-filled
+  // FT stories: find coverage of the same story (Reuters, Dow Jones…) through NTNU's Factiva licence.
+  // FT.com itself is restricted on the academic account. Factiva has no link format for a pre-filled
   // search, so the button copies the headline and opens Factiva; paste it into the search box there.
   const links = it.source === 'ft' ? `<div class="story-links">
-    <button class="fx-btn" data-headline="${escHtml(it.title)}" data-link="${escHtml(it.link)}">Read in Factiva ↗</button>
+    <button class="fx-btn" data-headline="${escHtml(it.title)}" data-link="${escHtml(it.link)}">Coverage in Factiva ↗</button>
   </div>` : '';
   const chips = (it.topics || []).map(t => `<span class="chip">${TOPIC_LABEL[t] || t}</span>`).join('');
   const img = showImage && it.image ? `<img src="${escHtml(safeUrl(it.image))}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '';
@@ -321,7 +322,7 @@ document.addEventListener('click', e => {
   // Start the copy and the open in the same tap: iOS only allows either inside a user gesture.
   const copied = navigator.clipboard?.writeText(query);
   window.open(FACTIVA_URL, '_blank', 'noopener');
-  Promise.resolve(copied).then(() => toast(`Copied “${query}”: paste it into Factiva’s search`))
+  Promise.resolve(copied).then(() => toast(`Copied “${query}”: paste into Factiva, Source: All Sources`))
     .catch(() => toast(`Search Factiva for: ${query}`));
   markRead(b.dataset.link);
   b.closest('li')?.classList.add('read');

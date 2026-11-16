@@ -65,7 +65,8 @@ python3 -m http.server -d dist 8000                               # open http://
   updating, push any commit or press "Run workflow".
 - If a feed or arXiv fails during a run, the previous run's items for that section are kept.
 - Story links open the publisher (FT, DN, NRK). DN opens logged in through your DN subscription.
-- FT stories also get **Read in Factiva ↗**, for reading through NTNU's Factiva licence. Factiva has no
-  link format for a pre-filled search, so the button copies the headline and opens Factiva; paste it into
-  the search there. The build never fetches article text from Factiva or anywhere else: that would break
+- FT stories also get **Coverage in Factiva ↗**. FT.com itself is restricted on NTNU's academic Factiva
+  account, but Reuters and Dow Jones usually report the same story ("…, FT says"). Factiva has no link format
+  for a pre-filled search, so the button copies a keyword search ("Diamondback and drilling and Permian and
+  Basin") and opens Factiva; paste it into the search with Source set to All Sources. The build never fetches article text from Factiva or anywhere else: that would break
   the licence terms and publish licensed content.
