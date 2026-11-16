@@ -287,6 +287,25 @@ function storyHtml(it, { showImage = true } = {}) {
 }
 
 const FACTIVA_URL = 'https://global.factiva.com/sb/default.aspx?lnep=hp';
+
+// Factiva treats words without connectors as one exact phrase, and FT's web headlines often differ from
+// the stored version. So build "word and word and ..." from the headline's most distinctive words.
+const FX_STOP = new Set(('a an and are as at be but by for from has have he her his how in into is it its new of on or '
+  + 'over says said she than that the their them they this to up was we were what when who why will with after about '
+  + 'amid as more most could would should can may first last year years plans set back out against between').split(' '));
+function factivaQuery(title) {
+  const words = title
+    .replace(/^[\p{L}\s]{2,20}:\s+/u, '')            // "FirstFT: …", "Opinion: …" labels aren't in the article
+    .replace(/[‘’'`]s\b/g, '')
+    .split(/[^\p{L}\p{N}$£€%.-]+/u)
+    .map(w => w.replace(/^[.-]+|[.-]+$/g, ''))
+    .filter(w => w.length > 2 && !/[$£€%\d]/.test(w) && !FX_STOP.has(w.toLowerCase()));  // amounts are written differently in Factiva
+  const uniq = [...new Map(words.map(w => [w.toLowerCase(), w])).values()];
+  // prefer names (capitalised, except the sentence-initial word), then longer words
+  const rank = (w, i) => (i > 0 && /^\p{Lu}/u.test(w) ? 2 : 0) + Math.min(w.length, 10) / 10;
+  const picked = uniq.map((w, i) => ({ w, i, r: rank(w, i) })).sort((a, b) => b.r - a.r).slice(0, 4).sort((a, b) => a.i - b.i);
+  return picked.map(p => p.w).join(' and ') || title;
+}
 function toast(msg) {
   let t = $('#toast');
   if (!t) { t = document.createElement('div'); t.id = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
@@ -298,12 +317,12 @@ function toast(msg) {
 document.addEventListener('click', e => {
   const b = e.target.closest('.fx-btn');
   if (!b) return;
-  const headline = b.dataset.headline;
+  const query = factivaQuery(b.dataset.headline);
   // Start the copy and the open in the same tap: iOS only allows either inside a user gesture.
-  const copied = navigator.clipboard?.writeText(headline);
+  const copied = navigator.clipboard?.writeText(query);
   window.open(FACTIVA_URL, '_blank', 'noopener');
-  Promise.resolve(copied).then(() => toast('Headline copied: paste it into Factiva’s search'))
-    .catch(() => toast(`Search Factiva for: ${headline}`));
+  Promise.resolve(copied).then(() => toast(`Copied “${query}”: paste it into Factiva’s search`))
+    .catch(() => toast(`Search Factiva for: ${query}`));
   markRead(b.dataset.link);
   b.closest('li')?.classList.add('read');
 });
