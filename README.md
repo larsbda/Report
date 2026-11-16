@@ -53,6 +53,7 @@ the agenda. Picking a city by hand with "Change weather location" overrides the 
 ## Local development
 
 ```sh
+node --test scripts/article-copies.test.mjs                       # verification and tick/fallback checks
 REPORT_PASSPHRASE=test WRITE_PLAINTEXT=1 node scripts/build.mjs   # data.debug.json shows the ranking
 python3 -m http.server -d dist 8000                               # open http://localhost:8000, unlock with "test"
 ```
@@ -64,6 +65,10 @@ python3 -m http.server -d dist 8000                               # open http://
 - GitHub pauses scheduled workflows on public repos after 60 days without commits. If the report stops
   updating, push any commit or press "Run workflow".
 - If a feed or arXiv fails during a run, the previous run's items for that section are kept.
-- Article links open the publisher directly. ByeByePaywall offers links to other services but does not
-  return article text or confirm completeness, so it cannot satisfy a requirement to open an alternate
-  copy only after verifying the full article. Do not route articles there automatically without that verification.
+- A small green ✓ beside FT means a Wayback copy passed full-body checks during the report build;
+  tapping that story opens the checked archive URL. Other stories open the publisher. No tick means
+  unverified, not necessarily unavailable. Checks expire after six hours and are repeated each build.
+  The checker requires matching article URL and headline, publisher article-body metadata and word count,
+  and the entire metadata body in the article HTML. Missing metadata, previews, errors and timeouts get no tick.
+  This is conservative evidence of completeness, not a guarantee of future availability or browser rendering.
+  ByeByePaywall itself only offers links to other services and cannot verify article content.

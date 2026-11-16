@@ -201,12 +201,18 @@ const TOPIC_LABEL = { economy: 'Economy', finance: 'Finance', ai: 'AI', politics
 
 function storyHtml(it, { showImage = true } = {}) {
   const src = DATA.sources.find(s => s.id === it.source);
+  const copy = it.source === 'ft' && it.articleCopy?.provider === 'wayback'
+    && /^https:\/\/web\.archive\.org\/web\/\d{14}id_\/https:\/\/(?:www\.)?ft\.com\/content\/[a-z0-9-]+$/i.test(it.articleCopy.url)
+    && it.articleCopy.url.endsWith('/' + it.link)
+    && Date.now() - Date.parse(it.articleCopy.checkedAt) >= 0
+    && Date.now() - Date.parse(it.articleCopy.checkedAt) < 6 * 3600e3 ? it.articleCopy : null;
+  const tick = copy ? '<span class="copy-tick" role="img" aria-label="Full archive copy checked; opens outside FT" title="Full archive copy checked; opens outside FT">✓</span>' : '';
   const chips = (it.topics || []).map(t => `<span class="chip">${TOPIC_LABEL[t] || t}</span>`).join('');
   const img = showImage && it.image ? `<img src="${escHtml(safeUrl(it.image))}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '';
   return `<li class="story${readSet.has(it.link) ? ' read' : ''}">
-    <a href="${escHtml(safeUrl(it.link))}" target="_blank" rel="noopener noreferrer" data-link="${escHtml(it.link)}">
+    <a href="${escHtml(safeUrl(copy?.url || it.link))}" target="_blank" rel="noopener noreferrer" data-link="${escHtml(it.link)}">
       <div class="story-body">
-        <div class="meta"><span class="src src-${it.source}">${escHtml(src?.short || it.source)}</span><span>${ago(it.published)}</span>${chips}</div>
+        <div class="meta"><span class="src src-${it.source}">${escHtml(src?.short || it.source)}</span>${tick}<span>${ago(it.published)}</span>${chips}</div>
         <h3>${escHtml(it.title)}</h3>
         ${it.desc ? `<p>${escHtml(it.desc)}</p>` : ''}
       </div>${img}

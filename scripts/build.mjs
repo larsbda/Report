@@ -9,6 +9,7 @@ import path from 'node:path';
 import { FEEDS, TOPICS, NEGATIVE, LIMITS, PAPERS, CALENDAR } from './config.mjs';
 import { eventsInWindow } from './ics.mjs';
 import { inferPlaces } from './places.mjs';
+import { checkArticleCopies } from './article-copies.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = path.join(ROOT, 'dist');
@@ -258,6 +259,7 @@ for (const s of news.sources) {
   const old = prev?.sources?.find(p => p.id === s.id);
   if (!s.ok && old?.ok) { s.items = old.items; s.ok = true; s.stale = true; console.log(`${s.id}: reused previous items`); }
 }
+await checkArticleCopies(news, { now });
 const data = { generated: new Date(now).toISOString(), ...news, papers, calendar };
 
 await rm(DIST, { recursive: true, force: true });
