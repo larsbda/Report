@@ -269,11 +269,9 @@ const TOPIC_LABEL = { economy: 'Economy', finance: 'Finance', ai: 'AI', politics
 
 function storyHtml(it, { showImage = true } = {}) {
   const src = DATA.sources.find(s => s.id === it.source);
-  // FT stories: find coverage of the same story (Reuters, Dow Jones…) through NTNU's Factiva licence.
-  // FT.com itself is restricted on the academic account. Factiva has no link format for a pre-filled
-  // search, so the button copies the headline and opens Factiva; paste it into the search box there.
-  const links = it.source === 'ft' ? `<div class="story-links">
-    <button class="fx-btn" data-headline="${escHtml(it.title)}" data-link="${escHtml(it.link)}">Coverage in Factiva ↗</button>
+  // WSJ stories: read the full article through NTNU's Factiva licence (WSJ is Dow Jones, like Factiva).
+  const links = it.source === 'wsj' ? `<div class="story-links">
+    <button class="fx-btn" data-headline="${escHtml(it.title)}" data-link="${escHtml(it.link)}">Read in Factiva ↗</button>
   </div>` : '';
   const chips = (it.topics || []).map(t => `<span class="chip">${TOPIC_LABEL[t] || t}</span>`).join('');
   const img = showImage && it.image ? `<img src="${escHtml(safeUrl(it.image))}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '';
@@ -287,9 +285,12 @@ function storyHtml(it, { showImage = true } = {}) {
     </a>${links}</li>`;
 }
 
-const FACTIVA_URL = 'https://global.factiva.com/sb/default.aspx?lnep=hp';
+const FACTIVA_URL = 'https://app.dowjones.com/factiva/home';
+// If Factiva's search page turns out to take the query in its address, put the pattern here with {q}
+// (e.g. 'https://app.dowjones.com/factiva/search?q={q}'): the button then opens the results directly.
+const FACTIVA_SEARCH = null;
 
-// Factiva treats words without connectors as one exact phrase, and FT's web headlines often differ from
+// Factiva treats words without connectors as one exact phrase, and web headlines often differ from
 // the stored version. So build "word and word and ..." from the headline's most distinctive words.
 const FX_STOP = new Set(('a an and are as at be but by for from has have he her his how in into is it its new of on or '
   + 'over says said she than that the their them they this to up was we were what when who why will with after about '
@@ -319,11 +320,15 @@ document.addEventListener('click', e => {
   const b = e.target.closest('.fx-btn');
   if (!b) return;
   const query = factivaQuery(b.dataset.headline);
-  // Start the copy and the open in the same tap: iOS only allows either inside a user gesture.
-  const copied = navigator.clipboard?.writeText(query);
-  window.open(FACTIVA_URL, '_blank', 'noopener');
-  Promise.resolve(copied).then(() => toast(`Copied “${query}”: paste into Factiva, Source: All Sources`))
-    .catch(() => toast(`Search Factiva for: ${query}`));
+  if (FACTIVA_SEARCH) {
+    window.open(FACTIVA_SEARCH.replace('{q}', encodeURIComponent(query)), '_blank', 'noopener');
+  } else {
+    // Start the copy and the open in the same tap: iOS only allows either inside a user gesture.
+    const copied = navigator.clipboard?.writeText(query);
+    window.open(FACTIVA_URL, '_blank', 'noopener');
+    Promise.resolve(copied).then(() => toast(`Copied “${query}”: paste it into Factiva’s search`))
+      .catch(() => toast(`Search Factiva for: ${query}`));
+  }
   markRead(b.dataset.link);
   b.closest('li')?.classList.add('read');
 });

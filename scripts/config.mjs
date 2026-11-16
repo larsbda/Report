@@ -2,12 +2,13 @@
 
 export const FEEDS = [
   {
-    id: 'ft', name: 'Financial Times', short: 'FT', boost: 0.5,
+    // Wall Street Journal public headline feeds (Dow Jones). Full articles: Factiva via NTNU, or wsj.com.
+    id: 'wsj', name: 'Wall Street Journal', short: 'WSJ', boost: 0.5,
     urls: [
-      'https://www.ft.com/rss/home',
-      'https://www.ft.com/world?format=rss',
-      'https://www.ft.com/markets?format=rss',
-      'https://www.ft.com/technology?format=rss',
+      'https://feeds.content.dowjones.io/public/rss/RSSWorldNews',
+      'https://feeds.content.dowjones.io/public/rss/WSJcomUSBusiness',
+      'https://feeds.content.dowjones.io/public/rss/RSSMarketsMain',
+      'https://feeds.content.dowjones.io/public/rss/RSSWSJD',
     ],
   },
   { id: 'dn', name: 'Dagens Næringsliv', short: 'DN', boost: 0.5, urls: ['https://services.dn.no/api/feed/rss/'] },

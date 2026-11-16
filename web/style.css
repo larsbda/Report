@@ -7,7 +7,7 @@
   --accent: #c8611f;
   --accent-soft: #f6e3d4;
   --chip: #efe9df;
-  --ft: #d9a37b;
+  --wsj: #8a6d3b;
   --dn: #c0392b;
   --nrk: #1f4e8c;
   --shadow: 0 1px 2px rgba(40, 30, 10, .06), 0 4px 16px rgba(40, 30, 10, .05);
@@ -24,7 +24,7 @@
     --accent: #f08a45;
     --accent-soft: #3a2a1f;
     --chip: #2a2c31;
-    --ft: #e2b48f;
+    --wsj: #d1b07a;
     --dn: #e0645a;
     --nrk: #6f9fe0;
     --shadow: none;
@@ -138,7 +138,7 @@ button { font: inherit; color: inherit; }
 }
 .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
 .src { font-weight: 700; letter-spacing: .03em; }
-.src-ft { color: var(--ft); } .src-dn { color: var(--dn); } .src-nrk { color: var(--nrk); }
+.src-wsj { color: var(--wsj); } .src-dn { color: var(--dn); } .src-nrk { color: var(--nrk); }
 .story-links { display: flex; gap: 18px; padding: 0 0 10px; margin-top: -6px; }
 .fx-btn {
   background: none; border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px;

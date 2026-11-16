@@ -1,6 +1,6 @@
 # Morning
 
-A private morning report: weather, your calendar, top stories from FT / DN / NRK, and a few arXiv papers.
+A private morning report: weather, your calendar, top stories from WSJ / DN / NRK, and a few arXiv papers.
 It's a static web app on GitHub Pages, installed on the phone with "Add to Home Screen".
 
 ## How it works
@@ -64,9 +64,11 @@ python3 -m http.server -d dist 8000                               # open http://
 - GitHub pauses scheduled workflows on public repos after 60 days without commits. If the report stops
   updating, push any commit or press "Run workflow".
 - If a feed or arXiv fails during a run, the previous run's items for that section are kept.
-- Story links open the publisher (FT, DN, NRK). DN opens logged in through your DN subscription.
-- FT stories also get **Coverage in Factiva ↗**. FT.com itself is restricted on NTNU's academic Factiva
-  account, but Reuters and Dow Jones usually report the same story ("…, FT says"). Factiva has no link format
-  for a pre-filled search, so the button copies a keyword search ("Diamondback and drilling and Permian and
-  Basin") and opens Factiva; paste it into the search with Source set to All Sources. The build never fetches article text from Factiva or anywhere else: that would break
-  the licence terms and publish licensed content.
+- Story links open the publisher (WSJ, DN, NRK). DN opens logged in through your DN subscription.
+- WSJ replaced FT, because FT.com is restricted on NTNU's academic Factiva account while WSJ is a Dow Jones
+  title like Factiva itself. WSJ stories get **Read in Factiva ↗**. Factiva has no link to a specific article
+  from outside, so the button copies a keyword search ("Campaign and Bring and Jensen and Huang") and opens
+  Factiva; paste it into the search. If Factiva's search page takes the query in its address, set
+  `FACTIVA_SEARCH` in `web/app.js` and the button opens the results directly.
+- The build never fetches article text from Factiva or anywhere else: that would break the licence terms
+  and publish licensed content.
