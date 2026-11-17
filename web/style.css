@@ -9,6 +9,7 @@
   --chip: #efe9df;
   --wsj: #8a6d3b;
   --ft: #996137;
+  --zeit: #354b62;
   --dn: #c0392b;
   --nrk: #1f4e8c;
   --shadow: 0 1px 2px rgba(40, 30, 10, .06), 0 4px 16px rgba(40, 30, 10, .05);
@@ -27,6 +28,7 @@
     --chip: #2a2c31;
     --wsj: #d1b07a;
     --ft: #e2b48f;
+    --zeit: #a8b9ce;
     --dn: #e0645a;
     --nrk: #6f9fe0;
     --shadow: none;
@@ -140,7 +142,7 @@ button { font: inherit; color: inherit; }
 }
 .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
 .src { font-weight: 700; letter-spacing: .03em; }
-.src-wsj { color: var(--wsj); } .src-ft { color: var(--ft); } .src-dn { color: var(--dn); } .src-nrk { color: var(--nrk); }
+.src-wsj { color: var(--wsj); } .src-ft { color: var(--ft); } .src-zeit { color: var(--zeit); } .src-dn { color: var(--dn); } .src-nrk { color: var(--nrk); }
 .story-links { display: flex; gap: 18px; padding: 0 0 10px; margin-top: -6px; }
 .story-links a { display: inline-block; border-top: 0; padding: 6px 0; color: var(--muted); font-size: 12px; text-decoration: underline; text-underline-offset: 3px; }
 .chip { background: var(--chip); border-radius: 999px; padding: 1px 8px; font-size: 11px; }

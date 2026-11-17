@@ -20,6 +20,7 @@ export const FEEDS = [
       'https://www.ft.com/technology?format=rss',
     ],
   },
+  { id: 'zeit', name: 'Die Zeit', short: 'ZEIT', boost: 0.5, urls: ['https://newsfeed.zeit.de/index'] },
   { id: 'dn', name: 'Dagens Næringsliv', short: 'DN', boost: 0.5, urls: ['https://services.dn.no/api/feed/rss/'] },
   { id: 'nrk', name: 'NRK', short: 'NRK', boost: 0, urls: ['https://www.nrk.no/toppsaker.rss'] },
 ];

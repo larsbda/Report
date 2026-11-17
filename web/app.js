@@ -269,7 +269,7 @@ const TOPIC_LABEL = { economy: 'Economy', finance: 'Finance', ai: 'AI', politics
 
 function storyHtml(it, { showImage = true } = {}) {
   const src = DATA.sources.find(s => s.id === it.source);
-  const archiveHost = { wsj: 'wsj.com', ft: 'ft.com' }[it.source];
+  const archiveHost = { wsj: 'wsj.com', ft: 'ft.com', zeit: 'zeit.de' }[it.source];
   let archive = null;
   if (archiveHost) {
     try {
